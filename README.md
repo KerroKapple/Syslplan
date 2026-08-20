@@ -172,6 +172,19 @@
 
 ## 刷题工具
 
+### 网页版（推荐）
+
+```bash
+node serve.js                # 启动后自动打开 http://127.0.0.1:3000
+node serve.js --port 8080    # 换端口
+node serve.js --no-open      # 不自动开浏览器
+```
+
+只监听 127.0.0.1，不对局域网暴露。键盘 **A/B/C/D** 或 **1/2/3/4** 作答，**Enter** 下一题，**Esc** 结束。
+支持自由练习（按题型/年份/章节筛选）、错题本、限时模考（75 题 75 分钟倒计时）、统计页。
+
+### 命令行版
+
 ```bash
 node quiz.js                 # 交互菜单
 node quiz.js --year 2019     # 按年份刷题
@@ -191,3 +204,4 @@ node quiz.js --list          # 题库概况
 | `tools/survey.js` | 批量判定 PDF 是文本型还是扫描型：`node tools/survey.js 01-真题` |
 | `tools/extract-questions.js` | 从 01-真题 与 04-模拟题 生成 `questions.json`，支持 4 种版面（会覆盖，手动补录前请备份） |
 | `tools/validate-questions.js` | 题库体检：乱码、空选项、重复选项、答案分布偏斜 |
+| `serve.js` + `web/index.html` | 网页版刷题（本地服务，与命令行共用 questions.json / wrong.json） |
