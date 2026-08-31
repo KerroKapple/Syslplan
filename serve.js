@@ -1,15 +1,23 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * 系统规划与管理师 · 刷题网页版（本地服务）
+ * 系统规划与管理师 · 刷题网页版
  *
- *   node serve.js            启动后浏览器打开 http://127.0.0.1:3000
+ * 本地：
+ *   node serve.js                 启动后浏览器打开 http://127.0.0.1:3000
  *   node serve.js --port 8080
- *   node serve.js --no-open  不自动打开浏览器
+ *   node serve.js --no-open       不自动打开浏览器
+ *
+ * 服务器部署：
+ *   QUIZ_TOKEN=你的口令 node serve.js --host 0.0.0.0 --port 3000
+ *   --host / HOST 环境变量：监听地址（默认 127.0.0.1）
+ *   --port / PORT 环境变量：端口
+ *   --token / QUIZ_TOKEN：访问口令。对外监听但未设口令时会拒绝启动，
+ *   因为错题本是可写的个人数据。口令通过请求头 X-Quiz-Token 校验，
+ *   网页端首次输入后存入 localStorage。
  *
  * 与命令行版 quiz.js 共用同一份 questions.json 与 wrong.json，
  * 错题本互通（但不要同时开着两边刷，后写入的一方会覆盖前一方）。
- * 只监听 127.0.0.1，不对局域网暴露。
  */
 const http = require('http');
 const fs = require('fs');
@@ -22,9 +30,19 @@ const W_FILE = path.join(ROOT, 'wrong.json');
 const WEB_DIR = path.join(ROOT, 'web');
 
 const argv = process.argv.slice(2);
-const PORT = parseInt((argv[argv.indexOf('--port') + 1] || ''), 10) || 3000;
-const AUTO_OPEN = !argv.includes('--no-open');
-const GRADUATE = parseInt((argv[argv.indexOf('--graduate') + 1] || ''), 10) || 2;
+const argOf = name => argv.includes(name) ? argv[argv.indexOf(name) + 1] : undefined;
+const PORT = parseInt(argOf('--port') || process.env.PORT || '', 10) || 3000;
+const HOST = argOf('--host') || process.env.HOST || '127.0.0.1';
+const TOKEN = argOf('--token') || process.env.QUIZ_TOKEN || '';
+const LOOPBACK = ['127.0.0.1', 'localhost', '::1'].includes(HOST);
+const AUTO_OPEN = !argv.includes('--no-open') && LOOPBACK;
+const GRADUATE = parseInt(argOf('--graduate') || '', 10) || 2;
+
+if (!LOOPBACK && !TOKEN) {
+  console.error('监听 ' + HOST + ' 会把可写的错题本暴露到网络上。');
+  console.error('请设置访问口令：QUIZ_TOKEN=你的口令 node serve.js --host ' + HOST);
+  process.exit(1);
+}
 
 // ---------- 数据 ----------
 if (!fs.existsSync(Q_FILE)) {
@@ -119,11 +137,26 @@ function readBody(req) {
   });
 }
 
+// 恒定时间比较，避免口令被逐字符试探
+const crypto = require('crypto');
+function tokenOK(req) {
+  if (!TOKEN) return true;
+  const got = String(req.headers['x-quiz-token'] || '');
+  const a = crypto.createHash('sha256').update(got).digest();
+  const b = crypto.createHash('sha256').update(TOKEN).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1');
   const p = decodeURIComponent(url.pathname);
 
   try {
+    // 静态页面不含题目数据，可匿名访问；所有 API 需要口令
+    if (p.startsWith('/api/') && !tokenOK(req)) {
+      return sendJSON(res, { error: 'unauthorized' }, 401);
+    }
+
     if (p === '/api/summary') return sendJSON(res, summary());
 
     if (p === '/api/quiz' && req.method === 'POST') {
@@ -194,10 +227,10 @@ function start(port, attempt = 0) {
       start(port + 1, attempt + 1);
     } else { console.error('启动失败:', err.message); process.exit(1); }
   });
-  server.listen(port, '127.0.0.1', () => {
-    const url = `http://127.0.0.1:${port}`;
+  server.listen(port, HOST, () => {
+    const url = `http://${LOOPBACK ? '127.0.0.1' : HOST}:${port}`;
     console.log(`\n  系规刷题网页版已启动`);
-    console.log(`  ${url}`);
+    console.log(`  ${url}${TOKEN ? '　（已启用访问口令）' : ''}`);
     console.log(`  题库 ${DB.total} 题　错题本 ${Object.keys(loadWrong().items).length} 题`);
     console.log(`  按 Ctrl+C 停止\n`);
     if (AUTO_OPEN) {

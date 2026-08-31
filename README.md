@@ -1,6 +1,6 @@
 # 系统规划与管理师（软考高级）备考工作区
 
-> 建立日期：2026-08-18 ｜ 考试日期：**2026-10-24 ~ 10-27（机考）** ｜ 剩余 **68 天**
+> 建立日期：2026-08-18 ｜ 考试日期：**2026-10-24 ~ 10-27（机考）** ｜ 剩余天数见刷题页顶部倒计时（2026-08-31 时为 54 天）
 > 三科同考、一次通过：综合知识（75 题选择）/ 案例分析 / 论文，每科满分 75、及格 45
 > 资料来源：`xiaomabenten/system_planner`（111 个文件）+ `xiaomabenten/ruankao_itpm`（16 个文件）
 > 合计 **127 个文件，347.6 MB**，全部通过字节数与文件头校验
@@ -175,13 +175,40 @@
 ### 网页版（推荐）
 
 ```bash
-node serve.js                # 启动后自动打开 http://127.0.0.1:3000
-node serve.js --port 8080    # 换端口
+node serve.js                # 本地使用：启动后自动打开 http://127.0.0.1:3000
+node serve.js --port 8080    # 换端口（也可用 PORT 环境变量）
 node serve.js --no-open      # 不自动开浏览器
 ```
 
-只监听 127.0.0.1，不对局域网暴露。键盘 **A/B/C/D** 或 **1/2/3/4** 作答，**Enter** 下一题，**Esc** 结束。
-支持自由练习（按题型/年份/章节筛选）、错题本、限时模考（75 题 75 分钟倒计时）、统计页。
+键盘 **A/B/C/D** 或 **1/2/3/4** 作答，**Enter** 下一题，**Esc** 交卷。
+支持自由练习（按题型/年份/章节筛选）、错题本、限时模考（75 题 75 分钟倒计时）、统计页（含正确率走势图）、考试倒计时。深浅色跟随系统。
+
+**部署到服务器**（错题本可写，属个人数据，对外监听必须设置口令，否则拒绝启动）：
+
+```bash
+QUIZ_TOKEN=你的口令 node serve.js --host 0.0.0.0 --port 3000 --no-open
+```
+
+网页首次打开会要求输入口令，之后存在浏览器 localStorage 里；手机、电脑共用同一份错题本与练习历史（`wrong.json` 存在服务器上，天然多端同步）。这是单人应用，不要把口令分享给别人一起刷——写入会互相覆盖。
+
+systemd 常驻示例（`/etc/systemd/system/syslplan.service`）：
+
+```ini
+[Unit]
+Description=Syslplan quiz web
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/Syslplan
+Environment=QUIZ_TOKEN=你的口令
+ExecStart=/usr/bin/node serve.js --host 0.0.0.0 --port 3000 --no-open
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+建议再套一层 Nginx/Caddy 做 HTTPS（口令是明文头 `X-Quiz-Token` 传输的，裸 HTTP 只适合内网/防火墙白名单场景）。记得定期备份 `wrong.json`。
 
 ### 命令行版
 
