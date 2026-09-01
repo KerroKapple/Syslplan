@@ -128,6 +128,11 @@ function sendJSON(res, obj, code = 200) {
   res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': body.length, 'Cache-Control': 'no-store' });
   res.end(body);
 }
+// 访问日志（stdout → journald）。401 时附带收到口令的长度，便于排查粘贴问题，不记录口令本身
+function logReq(req, p, code, extra) {
+  const ip = req.headers['x-real-ip'] || req.socket.remoteAddress;
+  console.log(`${new Date().toISOString()} ${ip} ${req.method} ${p} ${code}${extra ? ' ' + extra : ''}`);
+}
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let n = 0; const chunks = [];
@@ -154,8 +159,11 @@ const server = http.createServer(async (req, res) => {
   try {
     // 静态页面不含题目数据，可匿名访问；所有 API 需要口令
     if (p.startsWith('/api/') && !tokenOK(req)) {
+      const got = String(req.headers['x-quiz-token'] || '');
+      logReq(req, p, 401, `token_len=${got.length}`);
       return sendJSON(res, { error: 'unauthorized' }, 401);
     }
+    if (p.startsWith('/api/')) logReq(req, p, 200);
 
     if (p === '/api/summary') return sendJSON(res, summary());
 
