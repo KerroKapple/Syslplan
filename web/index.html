@@ -22,6 +22,35 @@
     --shadow:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.35);
   }
 }
+/* ---------- 主题 ---------- */
+/* 玄夜：墨蓝夜空 + 鎏金 */
+html[data-theme=xuanye]{
+  --bg:#111420; --panel:#191d2b; --ink:#e3e6f0; --muted:#8b91a8; --line:#2a3046; --line2:#39405c;
+  --cinnabar:#d9a441; --cinnabar-deep:#e6b95f; --cinnabar-soft:#2c2410;
+  --ok:#7fc08f; --ok-soft:#1c2b1e; --warn:#e08a4f; --warn-soft:#33200f;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.35);
+}
+/* 青瓷：釉色天青 */
+html[data-theme=qingci]{
+  --bg:#edf2ee; --panel:#fafdfb; --ink:#22302a; --muted:#71847b; --line:#d9e3dc; --line2:#c3d4c9;
+  --cinnabar:#247867; --cinnabar-deep:#1b5f52; --cinnabar-soft:#e0efeb;
+  --ok:#3f7d54; --ok-soft:#e6f1e6; --warn:#996a1e; --warn-soft:#f3ecd7;
+  --shadow:0 1px 2px rgba(30,60,45,.06),0 6px 20px rgba(30,60,45,.07);
+}
+/* 靛青：文卷靛蓝 */
+html[data-theme=dianqing]{
+  --bg:#eef1f7; --panel:#fbfcfe; --ink:#212838; --muted:#76809a; --line:#dce1ec; --line2:#c6cede;
+  --cinnabar:#2b5aa7; --cinnabar-deep:#20477f; --cinnabar-soft:#e3ebf8;
+  --ok:#3f7d54; --ok-soft:#e9f1e8; --warn:#996a1e; --warn-soft:#f5ecd8;
+  --shadow:0 1px 2px rgba(30,45,80,.06),0 6px 20px rgba(30,45,80,.07);
+}
+/* 桃夭：胭脂淡粉 */
+html[data-theme=taoyao]{
+  --bg:#f8f0ef; --panel:#fefafa; --ink:#33262a; --muted:#96808a; --line:#eddcda; --line2:#dfc6c6;
+  --cinnabar:#c2465f; --cinnabar-deep:#a03048; --cinnabar-soft:#f8e3e8;
+  --ok:#3f7d54; --ok-soft:#e9f1e8; --warn:#996a1e; --warn-soft:#f5ecd8;
+  --shadow:0 1px 2px rgba(90,40,50,.06),0 6px 20px rgba(90,40,50,.07);
+}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);
@@ -40,6 +69,8 @@ body{margin:0;background:var(--bg);color:var(--ink);
 h1{font:700 21px/1.2 var(--serif);margin:0;letter-spacing:2px}
 h1 small{font-size:12px;color:var(--muted);letter-spacing:3px;display:block;font-weight:400;margin-top:2px}
 .top .meta{margin-left:auto;text-align:right;font-size:12.5px;color:var(--muted);line-height:1.5}
+.themesel{font:12.5px/1.4 inherit;padding:5px 8px;border-radius:6px;border:1px solid var(--line2);
+  background:var(--panel);color:var(--muted);cursor:pointer;width:auto}
 .count{color:var(--cinnabar);font:700 15px/1 var(--serif)}
 
 /* ---------- 倒计时横幅 ---------- */
@@ -166,6 +197,13 @@ td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
     <div class="mark">系规</div>
     <h1>刷题 · 墨卷<small>系统规划与管理师 · 综合知识</small></h1>
     <div class="meta" id="topmeta">加载中…</div>
+    <select id="themesel" class="themesel" title="主题">
+      <option value="">墨卷（随系统深浅）</option>
+      <option value="xuanye">玄夜 · 墨蓝鎏金</option>
+      <option value="qingci">青瓷 · 釉色天青</option>
+      <option value="dianqing">靛青 · 文卷蓝</option>
+      <option value="taoyao">桃夭 · 胭脂粉</option>
+    </select>
   </div>
 
   <!-- 首页 -->
@@ -279,6 +317,17 @@ const show = id => ['home','quiz','result','stats'].forEach(s => $('#'+s).classL
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pad = n => String(n).padStart(2,'0');
 const mmss = s => pad(Math.floor(s/60)) + ':' + pad(Math.floor(s%60));
+
+// ---------- 主题 ----------
+const savedTheme = localStorage.getItem('quizTheme') || '';
+if(savedTheme) document.documentElement.dataset.theme = savedTheme;
+$('#themesel').value = savedTheme;
+$('#themesel').onchange = e => {
+  const v = e.target.value;
+  if(v) document.documentElement.dataset.theme = v;
+  else delete document.documentElement.dataset.theme;
+  localStorage.setItem('quizTheme', v);
+};
 
 const EXAM_DATE = '2026-10-24';
 $('#cdays').textContent = Math.max(0, Math.ceil((new Date(EXAM_DATE) - new Date(new Date().toDateString())) / 864e5));
